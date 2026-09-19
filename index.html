@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>波场 USDT 查询</title>
+  <style>
+    :root {
+      --ink: #12221f;
+      --muted: #64746f;
+      --line: #dce7e3;
+      --paper: rgba(255,255,255,.88);
+      --green: #0a7b62;
+      --green-2: #075f4d;
+      --mint: #dff5ec;
+      --red: #c74444;
+      --shadow: 0 20px 60px rgba(26, 62, 52, .10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 9% 10%, #d8f2e8 0, transparent 30%),
+        radial-gradient(circle at 94% 2%, #f5e8ce 0, transparent 26%),
+        #f5f8f6;
+      font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    button, input { font: inherit; }
+    a { color: var(--green-2); }
+    .wrap { width: min(1160px, calc(100% - 32px)); margin: 0 auto; }
+    header { padding: 34px 0 26px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.02em; }
+    .brand-mark { display:grid; place-items:center; width:42px; height:42px; border-radius:14px; color:white; background:var(--green); box-shadow: 0 10px 25px rgba(10,123,98,.25); }
+    h1 { margin: 34px 0 8px; font-size: clamp(32px, 6vw, 58px); line-height: 1.08; letter-spacing: -.055em; }
+    .lead { max-width: 680px; color: var(--muted); font-size: 17px; }
+    .search-card, .panel, .stat { background: var(--paper); border: 1px solid rgba(255,255,255,.9); box-shadow: var(--shadow); backdrop-filter: blur(14px); }
+    .search-card { margin-top: 28px; padding: 12px; border-radius: 22px; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    .search-card input { width: 100%; min-width:0; padding: 15px 16px; border: 0; outline: 0; background: transparent; color: var(--ink); }
+    .primary { border:0; border-radius: 15px; padding: 14px 24px; background: var(--green); color:white; font-weight:750; cursor:pointer; transition:.2s; }
+    .primary:hover { background: var(--green-2); transform: translateY(-1px); }
+    .primary:disabled { opacity:.55; cursor:wait; transform:none; }
+    .helper { display:flex; flex-wrap:wrap; gap:8px 18px; margin: 12px 5px 0; color:var(--muted); font-size:13px; }
+    .helper strong { color:var(--ink); }
+    .settings { margin-top:14px; }
+    .settings summary { cursor:pointer; color:var(--muted); font-size:13px; }
+    .settings-row { display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:10px; }
+    .settings input { border:1px solid var(--line); background:#fff; border-radius:12px; padding:11px 13px; }
+    .ghost { border:1px solid var(--line); background:#fff; color:var(--ink); border-radius:12px; padding:10px 15px; cursor:pointer; }
+    .notice { display:none; margin:18px 0 0; padding:13px 16px; border-radius:14px; background:#fff4df; color:#755111; border:1px solid #f1d69f; }
+    .notice.error { background:#fff0ef; color:#8e2929; border-color:#f1c8c4; }
+    #results { display:none; }
+    .stats { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:28px 0 16px; }
+    .stat { padding:21px; border-radius:20px; }
+    .stat-label { color:var(--muted); font-size:13px; }
+    .stat-value { margin-top:5px; font-size:26px; font-weight:800; letter-spacing:-.035em; overflow-wrap:anywhere; }
+    .stat-value.address { font: 700 14px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing:0; }
+    .panel { margin-bottom: 28px; border-radius:24px; overflow:hidden; }
+    .panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px 22px; border-bottom:1px solid var(--line); }
+    .panel-head h2 { margin:0; font-size:19px; }
+    .count { color:var(--muted); font-size:13px; }
+    .table-wrap { overflow:auto; }
+    table { width:100%; border-collapse:collapse; min-width:880px; }
+    th, td { text-align:left; padding:15px 18px; border-bottom:1px solid var(--line); white-space:nowrap; }
+    th { color:var(--muted); font-size:12px; font-weight:650; background:#f8faf9; }
+    tbody tr:hover { background:#f7fbf9; }
+    .tag { display:inline-flex; align-items:center; min-width:54px; justify-content:center; padding:4px 9px; border-radius:999px; font-weight:750; font-size:12px; }
+    .tag.in { color:#067258; background:#def5ec; }
+    .tag.out { color:#a33737; background:#fde9e7; }
+    .amount { font-weight:800; }
+    .mono { font-family:ui-monospace, SFMono-Regular, Consolas, monospace; font-size:13px; }
+    .empty { padding:44px 20px; text-align:center; color:var(--muted); }
+    .load-more { display:none; margin:18px auto 22px; }
+    footer { padding:10px 0 40px; color:var(--muted); font-size:13px; }
+    .skeleton { animation:pulse 1.2s ease-in-out infinite alternate; }
+    @keyframes pulse { to { opacity:.45; } }
+    @media (max-width:760px) {
+      .search-card { grid-template-columns:1fr; }
+      .stats { grid-template-columns:1fr; }
+      .settings-row { grid-template-columns:1fr; }
+      h1 { margin-top:24px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <div class="brand"><span class="brand-mark">₮</span><span>波场 USDT 查询</span></div>
+    <h1>余额和流水，<br>一眼看清。</h1>
+    <p class="lead">输入公开的 TRON 地址，查询主网 TRC20-USDT 余额及最近转入、转出记录。纯查询工具，不连接钱包。</p>
+
+    <form id="searchForm" class="search-card">
+      <input id="addressInput" autocomplete="off" spellcheck="false" placeholder="输入以 T 开头的波场地址" aria-label="波场地址">
+      <button id="searchButton" class="primary" type="submit">立即查询</button>
+    </form>
+    <div class="helper">
+      <span>官方 USDT 合约：<strong>TR7NHq…Lj6t</strong></span>
+      <span>仅查询已确认交易</span>
+      <span>切勿输入私钥或助记词</span>
+    </div>
+    <details class="settings">
+      <summary>接口设置（遇到请求限额时使用）</summary>
+      <div class="settings-row">
+        <input id="apiKeyInput" type="password" autocomplete="off" placeholder="可选：输入你自己的 TRON-PRO-API-KEY（不会保存）">
+        <button id="clearKey" class="ghost" type="button">清空</button>
+      </div>
+    </details>
+    <div id="notice" class="notice" role="alert"></div>
+  </header>
+
+  <main id="results" class="wrap">
+    <section class="stats">
+      <article class="stat"><div class="stat-label">USDT 余额</div><div id="usdtBalance" class="stat-value">—</div></article>
+      <article class="stat"><div class="stat-label">TRX 余额</div><div id="trxBalance" class="stat-value">—</div></article>
+      <article class="stat"><div class="stat-label">查询地址</div><div id="addressDisplay" class="stat-value address">—</div></article>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><h2>USDT 转账记录</h2><span id="recordCount" class="count"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>方向</th><th>金额</th><th>对方地址</th><th>时间</th><th>交易哈希</th></tr></thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+        <div id="emptyState" class="empty" hidden>这个地址暂无已确认的 USDT 转账记录。</div>
+      </div>
+      <button id="loadMore" class="ghost load-more" type="button">加载更多</button>
+    </section>
+  </main>
+
+  <footer class="wrap">数据来自 TRON 主网公开接口，仅供查询与核对；请以链上最终状态为准。</footer>
+
+  <script>
+    const API = 'https://api.trongrid.io';
+    const USDT_CONTRACT = 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+    const form = document.querySelector('#searchForm');
+    const addressInput = document.querySelector('#addressInput');
+    const apiKeyInput = document.querySelector('#apiKeyInput');
+    const searchButton = document.querySelector('#searchButton');
+    const notice = document.querySelector('#notice');
+    const results = document.querySelector('#results');
+    const body = document.querySelector('#recordsBody');
+    const emptyState = document.querySelector('#emptyState');
+    const loadMoreButton = document.querySelector('#loadMore');
+    let currentAddress = '';
+    let fingerprint = '';
+    let renderedCount = 0;
+
+    document.querySelector('#clearKey').addEventListener('click', () => apiKeyInput.value = '');
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const address = addressInput.value.trim();
+      hideNotice();
+      if (!(await isValidTronAddress(address))) {
+        showNotice('地址格式不正确。请输入一个完整、有效且以 T 开头的波场地址。', true);
+        return;
+      }
+      currentAddress = address;
+      fingerprint = '';
+      renderedCount = 0;
+      body.innerHTML = '';
+      emptyState.hidden = true;
+      loadMoreButton.style.display = 'none';
+      results.style.display = 'block';
+      document.querySelector('#addressDisplay').textContent = address;
+      setLoading(true);
+      try {
+        const [usdt, trx] = await Promise.all([fetchUsdtBalance(address), fetchTrxBalance(address)]);
+        document.querySelector('#usdtBalance').textContent = `${formatUnits(usdt, 6)} USDT`;
+        document.querySelector('#trxBalance').textContent = `${formatUnits(trx, 6)} TRX`;
+        await fetchTransfers(false);
+        history.replaceState(null, '', `#${address}`);
+      } catch (error) {
+        showNotice(friendlyError(error), true);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    loadMoreButton.addEventListener('click', () => fetchTransfers(true));
+
+    function headers(json = false) {
+      const value = apiKeyInput.value.trim();
+      const h = json ? {'Content-Type':'application/json'} : {};
+      if (value) h['TRON-PRO-API-KEY'] = value;
+      return h;
+    }
+
+    async function fetchUsdtBalance(address) {
+      const hex = bytesToHex(base58Decode(address).slice(0, 21));
+      const parameter = hex.slice(2).padStart(64, '0');
+      const response = await fetch(`${API}/wallet/triggerconstantcontract`, {
+        method:'POST', headers:headers(true),
+        body:JSON.stringify({owner_address:address, contract_address:USDT_CONTRACT, function_selector:'balanceOf(address)', parameter, visible:true})
+      });
+      const data = await readResponse(response);
+      if (!data.result?.result || !data.constant_result?.[0]) throw new Error('BALANCE_QUERY_FAILED');
+      return BigInt(`0x${data.constant_result[0]}`);
+    }
+
+    async function fetchTrxBalance(address) {
+      const response = await fetch(`${API}/wallet/getaccount`, {
+        method:'POST', headers:headers(true), body:JSON.stringify({address, visible:true})
+      });
+      const data = await readResponse(response);
+      return BigInt(data.balance || 0);
+    }
+
+    async function fetchTransfers(append) {
+      loadMoreButton.disabled = true;
+      loadMoreButton.textContent = '正在加载…';
+      try {
+        const params = new URLSearchParams({only_confirmed:'true', limit:'20', order_by:'block_timestamp,desc', contract_address:USDT_CONTRACT});
+        if (append && fingerprint) params.set('fingerprint', fingerprint);
+        const response = await fetch(`${API}/v1/accounts/${encodeURIComponent(currentAddress)}/transactions/trc20?${params}`, {headers:headers()});
+        const payload = await readResponse(response);
+        const records = Array.isArray(payload.data) ? payload.data : [];
+        renderRecords(records);
+        fingerprint = payload.meta?.fingerprint || '';
+        loadMoreButton.style.display = fingerprint ? 'block' : 'none';
+        emptyState.hidden = renderedCount !== 0;
+        document.querySelector('#recordCount').textContent = renderedCount ? `已显示 ${renderedCount} 笔` : '';
+      } catch (error) {
+        showNotice(friendlyError(error), true);
+      } finally {
+        loadMoreButton.disabled = false;
+        loadMoreButton.textContent = '加载更多';
+      }
+    }
+
+    function renderRecords(records) {
+      const fragment = document.createDocumentFragment();
+      for (const item of records) {
+        const incoming = sameAddress(item.to, currentAddress);
+        const counterparty = incoming ? item.from : item.to;
+        const decimals = Number(item.token_info?.decimals ?? 6);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><span class="tag ${incoming ? 'in' : 'out'}">${incoming ? '转入' : '转出'}</span></td>
+          <td class="amount">${incoming ? '+' : '-'}${escapeHtml(formatUnits(BigInt(item.value || 0), decimals))} USDT</td>
+          <td><a class="mono" target="_blank" rel="noopener" href="https://tronscan.org/#/address/${encodeURIComponent(counterparty)}">${escapeHtml(shorten(counterparty, 8))}</a></td>
+          <td>${escapeHtml(formatTime(item.block_timestamp))}</td>
+          <td><a class="mono" target="_blank" rel="noopener" href="https://tronscan.org/#/transaction/${encodeURIComponent(item.transaction_id)}">${escapeHtml(shorten(item.transaction_id, 9))}</a></td>`;
+        fragment.appendChild(row);
+      }
+      body.appendChild(fragment);
+      renderedCount += records.length;
+    }
+
+    async function readResponse(response) {
+      let data;
+      try { data = await response.json(); } catch { throw new Error('BAD_RESPONSE'); }
+      if (!response.ok || data.success === false) {
+        const error = new Error(response.status === 429 ? 'RATE_LIMIT' : 'API_ERROR');
+        error.detail = data?.error || data?.Error || data?.message;
+        throw error;
+      }
+      return data;
+    }
+
+    function friendlyError(error) {
+      if (error.message === 'RATE_LIMIT' || /rate|limit|403|429/i.test(String(error.detail || ''))) {
+        return '查询次数达到接口限制。请稍后重试，或在“接口设置”中填写你自己的 TRON-PRO-API-KEY。';
+      }
+      if (error instanceof TypeError) return '无法连接波场查询接口。请检查网络，或确认浏览器没有阻止跨域请求。';
+      return '查询暂时失败，请稍后重试。若持续出现，请在接口设置中填写 TRON-PRO-API-KEY。';
+    }
+
+    function setLoading(value) {
+      searchButton.disabled = value;
+      searchButton.textContent = value ? '查询中…' : '立即查询';
+      document.querySelectorAll('.stat-value').forEach(el => el.classList.toggle('skeleton', value));
+    }
+    function showNotice(message, error = false) { notice.textContent = message; notice.className = `notice${error ? ' error' : ''}`; notice.style.display='block'; }
+    function hideNotice() { notice.style.display='none'; }
+    function sameAddress(a,b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
+    function shorten(value, n) { const s=String(value||''); return s.length > n*2+2 ? `${s.slice(0,n)}…${s.slice(-n)}` : s; }
+    function formatTime(ms) { return new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date(Number(ms))); }
+    function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    function formatUnits(value, decimals) {
+      const negative = value < 0n;
+      let digits = (negative ? -value : value).toString().padStart(decimals + 1, '0');
+      const whole = digits.slice(0, -decimals) || '0';
+      const fraction = decimals ? digits.slice(-decimals).replace(/0+$/, '') : '';
+      return `${negative ? '-' : ''}${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}${fraction ? '.' + fraction : ''}`;
+    }
+
+    async function isValidTronAddress(address) {
+      if (!/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(address)) return false;
+      try {
+        const decoded = base58Decode(address);
+        if (decoded.length !== 25 || decoded[0] !== 0x41) return false;
+        const body = decoded.slice(0, 21);
+        const first = new Uint8Array(await crypto.subtle.digest('SHA-256', body));
+        const second = new Uint8Array(await crypto.subtle.digest('SHA-256', first));
+        return decoded.slice(21).every((v, i) => v === second[i]);
+      } catch { return false; }
+    }
+
+    function base58Decode(text) {
+      const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+      let number = 0n;
+      for (const char of text) {
+        const index = alphabet.indexOf(char);
+        if (index < 0) throw new Error('BASE58');
+        number = number * 58n + BigInt(index);
+      }
+      const bytes = [];
+      while (number > 0n) { bytes.unshift(Number(number & 255n)); number >>= 8n; }
+      for (let i=0; i<text.length && text[i]==='1'; i++) bytes.unshift(0);
+      return new Uint8Array(bytes);
+    }
+    function bytesToHex(bytes) { return [...bytes].map(v => v.toString(16).padStart(2,'0')).join(''); }
+
+    const hashAddress = location.hash.slice(1);
+    if (hashAddress) { addressInput.value = hashAddress; form.requestSubmit(); }
+  </script>
+</body>
+</html>
